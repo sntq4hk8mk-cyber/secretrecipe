@@ -114,16 +114,11 @@
     </div>
 
     <script>
-        // SUPABASE QOŞULMASI (Sənin açarların)
+        // SUPABASE QOŞULMASI (Xəta yaradan ad dəyişdirildi)
         const SUPABASE_URL = "https://xqulzoztvhotuduzagcs.supabase.co";
         const SUPABASE_KEY = "sb_publishable_rP5penO5JG-ZihDZZXlO_A_s5JZki_o";
         
-        let supabaseClient;
-        try {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch (e) {
-            console.error("Supabase xətası:", e);
-        }
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const menuItems = [
             { id: 1, name: "Dadlı Lülə Kabab", price: 8.50, img: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80" },
@@ -209,7 +204,7 @@
             `;
 
             try {
-                const { data, error } = await supabaseClient
+                const { data, error } = await db
                     .from('recipes')
                     .insert([{ title: title, encrypted_data: encryptedData }]);
 
