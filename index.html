@@ -31,7 +31,6 @@
 
         .section-title { font-size: 1.4rem; color: #fff; margin-bottom: 15px; border-bottom: 2px solid #e67e22; padding-bottom: 8px; }
         
-        /* Menyu Grid və Animasiyalı Kartlar */
         .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .menu-item {
             background: rgba(255, 255, 255, 0.95); border-radius: 12px; overflow: hidden;
@@ -97,7 +96,7 @@
                 <input type="text" id="recipeTitle" placeholder="Reseptin Adı (Məs: Şah Pilav)">
                 <textarea id="recipeContent" rows="3" placeholder="Gizli Resept Tərkibi və Hazırlanması..."></textarea>
                 <input type="password" id="secretKey" placeholder="Məxfi Şifrələmə Açarı (Secret Key)">
-                <button class="btn btn-purple" onclick="encryptAndSave()">🔒 AES-256 ilə Şifrələ və Bazaya Yaz</button>
+                <button type="button" class="btn btn-purple" onclick="encryptAndSave()">🔒 AES-256 ilə Şifrələ və Bazaya Yaz</button>
                 
                 <div id="cryptoOutput" class="crypto-box" style="display:none;"></div>
             </div>
@@ -115,10 +114,16 @@
     </div>
 
     <script>
-        // SUPABASE QOŞULMASI (Sənin açarların daxil edilib)
+        // SUPABASE QOŞULMASI (Sənin açarların)
         const SUPABASE_URL = "https://xqulzoztvhotuduzagcs.supabase.co";
         const SUPABASE_KEY = "sb_publishable_rP5penO5JG-ZihDZZXlO_A_s5JZki_o";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let supabaseClient;
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Supabase xətası:", e);
+        }
 
         const menuItems = [
             { id: 1, name: "Dadlı Lülə Kabab", price: 8.50, img: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=500&q=80" },
@@ -148,7 +153,8 @@
         }
 
         function addToCart(id) {
-            cart.push(menuItems.find(p => p.id === id));
+            const item = menuItems.find(p => p.id === id);
+            cart.push(item);
             updateCart();
         }
 
@@ -179,39 +185,40 @@
             updateCart();
         }
 
-        // İKİQAT KRİPTOQRAFİYA VƏ SUPABASE-Ə YAZMAQ
+        // Kriptoqrafiya və Supabase-ə Yazma Funksiyası
         async function encryptAndSave() {
             const title = document.getElementById('recipeTitle').value;
             const content = document.getElementById('recipeContent').value;
             const key = document.getElementById('secretKey').value;
 
             if (!title || !content || !key) {
-                alert("Zəhmət olmasa bütün xanaları doldurun!");
+                alert("Zəhmət olmasa resept adını, məzmununu və şifrəni tam doldurun!");
                 return;
             }
 
             // AES-256 Şifrələmə
             const encryptedData = CryptoJS.AES.encrypt(content, key).toString();
-            // SHA-256 Hash Yoxlaması
+            // SHA-256 Hash Doğrulaması
             const keyHash = CryptoJS.SHA256(key).toString();
 
             const outputDiv = document.getElementById('cryptoOutput');
             outputDiv.style.display = 'block';
             outputDiv.innerHTML = `
-                <b>🔐 AES-256 Şifrələnmiş Mətn (Ciphertext):</b><br>${encryptedData}<br><br>
+                <b>🔐 AES-256 Şifrələnmiş Mətn:</b><br>${encryptedData}<br><br>
                 <b>🛡️ SHA-256 Hash Dəyəri:</b><br>${keyHash}
             `;
 
-            // Supabase Bazasına Göndərmə
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('recipes')
                     .insert([{ title: title, encrypted_data: encryptedData }]);
 
-                if (error) throw error;
-                alert("✅ Resept uğurla şifrələndi və Supabase bazasına yazıldı!");
+                if (error) {
+                    alert("Supabase Xətası: " + error.message);
+                } else {
+                    alert("✅ Resept uğurla şifrələndi və Supabase bazasına yazıldı!");
+                }
             } catch (err) {
-                console.error("Supabase Xətası:", err.message);
                 alert("Xəta baş verdi: " + err.message);
             }
         }
